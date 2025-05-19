@@ -4,8 +4,6 @@
 
 **<ins>Note #3:</ins> While this code intends to provide plug n play configs/tuning numbers for COTS Modules, there are several configs/tunes that are untested with the change to Phoenix 6. If this code is used for one of those untested modules, the module specific configs and tuning will most likely need to be edited.**
 
-**If anyone would like to contribute a config/tune to be added as "tested" please send a message or make a PR.**
-
 **Scroll down for a full list of tested/untested configs.**
 
 # BaseTalonFXSwerve </br>

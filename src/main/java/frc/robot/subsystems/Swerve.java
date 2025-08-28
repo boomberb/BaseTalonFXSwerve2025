@@ -26,31 +26,46 @@ public class Swerve extends SubsystemBase {
     public SwerveModule[] mSwerveMods;
     public Pigeon2 gyro;
 
+    /**
+     * Creates a new Swerve subsystem object using four SwerveModule objects (representing each swerve module of the physical robot) 
+     * and a Pigeon2 object. In addition, PathPlanner's AutoBuilder and the SwerveDriveOdometry object are configured in this method
+     * @return A new Swerve subsystem object
+     */
     public Swerve() {
         gyro = new Pigeon2(Constants.Swerve.pigeonID);
         gyro.getConfigurator().apply(new Pigeon2Configuration());
-        gyro.setYaw(0);
+        gyro.setYaw(0); // The robot should move in the direction the front wheels face when the robot is first booted up
 
-        mSwerveMods = new SwerveModule[] {
+        /* SwerveModule Objects */
+        mSwerveMods = new SwerveModule[] { 
             new SwerveModule(0, Constants.Swerve.Mod0.constants),
             new SwerveModule(1, Constants.Swerve.Mod1.constants),
             new SwerveModule(2, Constants.Swerve.Mod2.constants),
             new SwerveModule(3, Constants.Swerve.Mod3.constants)
         };
 
-        swerveOdometry = new SwerveDriveOdometry(Constants.Swerve.swerveKinematics, getGyroYaw(), getModulePositions());
+        /* Swerve Drive Odometry (or, in the future, perhaps a Swerve Pose Estimator)
+         * A SwerveDriveOdometry object works by constantly tracking the angle of rotation (yaw) of the robot chassis, the current angle 
+         * of rotation of each swerve module wheel, and the total distance travelled by each swerve module wheel
+         * By tracking the values mentioned above and being given the location of each swerve module relative to each other, the relative 
+         * location of the robot and the swerve module wheel states may be tracked
+         * WARNING: Unless a pose estimator with vision-based correction is used, the robot location measurements can become inaccurate with 
+         * repeated collisions, rugged-terrain driving, or simply continuous driving
+         */
+        swerveOdometry = new SwerveDriveOdometry(Constants.Swerve.swerveKinematics, getGyroYaw(), getModulePositions()); // TODO: Swap this with a SwerveDrivePoseEstimator if using vision
 
+        /* PathPlanner AutoBuilder Configuration */
         var alliance = DriverStation.getAlliance();
 
         try {
             RobotConfig config = RobotConfig.fromGUISettings();
             
-            AutoBuilder.configure( // EXPERIMENTAL SWERVE POSE ESTIMATION METHODS ADDED!!!
+            AutoBuilder.configure( // Configure AutoBuilder for PathPlanner; it must happen IN THE CONSTRUCTOR AT THE END OF THE METHOD DEFINITION
                 this::getPose, // Robot pose supplier
                 this::setPose, // Method to reset odometry (will be called if your auto has a starting pose)
                 this::getChassisSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
                 this::driveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
-                Constants.AutoSwerveConstants.pathPlannerConfig,
+                Constants.AutoSwerveConstants.pathPlannerConfig, // Other configuration values from the Constants class of this project
                 config, // Load the RobotConfig from the GUI settings.
                 () -> {
                     // Boolean supplier that controls when the path will be mirrored for the red alliance
@@ -70,36 +85,48 @@ public class Swerve extends SubsystemBase {
         }
     }
 
+    /**
+     * Sets the speeds (voltages) of the angle (azimuth) and drive motors of all swerve modules based on the desired robot movement and 
+     *  mode of travel
+     * @param translation A Translation2d object representing the desired x and y component of the robot chassis's desired translational movement
+     * @param rotation A double representing the angular velocity (radians per second) the robot chassis should rotate at
+     * @param fieldRelative If the swerve drive should be moving in field-relative mode or not. Field-relative mode moves the robot relative to 
+     * the robot's heading. Heading, NOT TO BE CONFUSED WITH THE CHASSIS'S ORIENTATION, is the direction the swerve drive considers "forward" when 
+     * doing field-relative movement. Not choosing to use field-relative movement will result in robot-relative movement instead -- movement 
+     * relative to the direction the robot chassis faces (essentially like how a typical car drives)
+     * @param isOpenLoop If open loop mode should be used. Use open loop mode for teleoperated swerve drive and closed loop mode (having 
+     * isOpenLoop = false) for autonomous swerve drive
+     */
     public void drive(Translation2d translation, double rotation, boolean fieldRelative, boolean isOpenLoop) {
+        /* Calculating the desired motor voltages for each swerve module... */
         SwerveModuleState[] swerveModuleStates =
             Constants.Swerve.swerveKinematics.toSwerveModuleStates(
-                fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds(
+                fieldRelative ? ChassisSpeeds.fromFieldRelativeSpeeds( // If the swerve drive is using field-relative controls, do the following...
                                     translation.getX(), 
                                     translation.getY(), 
                                     rotation, 
-                                    getHeading()
-                                )
+                                    getHeading() 
+                                ) // ...otherwise, use robot-relative controls:
                                 : new ChassisSpeeds(
                                     translation.getX(), 
                                     translation.getY(), 
                                     rotation)
-                                );
-        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.Swerve.maxSpeed);
+                                ); // NOTE: Please see the method documentation if you are unsure of what field- and robot-relative controls are
 
+        /* Altering the calculated motor voltages such that the resulting wheel speeds will move the robot faster than its limit... */
+        SwerveDriveKinematics.desaturateWheelSpeeds(swerveModuleStates, Constants.Swerve.maxSpeed); 
+
+        /* Applying the calculated (and, if necessary, altered) desired motor voltages to each motor of each swerve module... */
         for(SwerveModule mod : mSwerveMods){
             mod.setDesiredState(swerveModuleStates[mod.moduleNumber], isOpenLoop);
         }
     }    
 
-    /* Used by SwerveControllerCommand in Auto */
-    public void setModuleStates(SwerveModuleState[] desiredStates) {
-        SwerveDriveKinematics.desaturateWheelSpeeds(desiredStates, Constants.Swerve.maxSpeed);
-        
-        for(SwerveModule mod : mSwerveMods){
-            mod.setDesiredState(desiredStates[mod.moduleNumber], false);
-        }
-    }
-
+    /**
+     * Gets the speed and angle of rotation of each swerve module wheel as SwerveModuleState objects
+     * @return A SwerveModuleState array that contains the SwerveModuleState objects for each swerve module in order of the swerve 
+     * module numbers. A SwerveModuleState object contains the speed and angle of rotation of the swerve module the object represents
+     */
     public SwerveModuleState[] getModuleStates(){
         SwerveModuleState[] states = new SwerveModuleState[4];
         for(SwerveModule mod : mSwerveMods){
@@ -108,6 +135,12 @@ public class Swerve extends SubsystemBase {
         return states;
     }
 
+    /**
+     * Gets the angle of rotation and total distance travelled of each swerve module wheel as SwerveModulePosition objects
+     * @return A SwerveModulePosition array that contains the SwerveModulePosition objects for each swerve module in order of the swerve 
+     * module numbers. A SwerveModulePosition object contains the angle of rotation and total distance travelled of the swerve module 
+     * the object represents
+     */
     public SwerveModulePosition[] getModulePositions(){
         SwerveModulePosition[] positions = new SwerveModulePosition[4];
         for(SwerveModule mod : mSwerveMods){
@@ -116,12 +149,24 @@ public class Swerve extends SubsystemBase {
         return positions;
     }
 
+    /**
+     * Gets the x and y components of ROBOT-RELATIVE translational movement along with the angular velocity of the robot chassis (radians 
+     * per second) as a ChassisSpeeds object. Note that, here, x represents forward movement of the robot chassis and y represents 
+     * left/right movement of the robot chassis
+     * @return A ChassisSpeeds object that contains values representing the x and y components of ROBOT-RELATIVE translational movement 
+     * along with the angular velocity of the robot chassis (radians per second) 
+     */
     public ChassisSpeeds getChassisSpeeds() { // For PathPlanner
         ChassisSpeeds fieldRelativeSpeeds = Constants.Swerve.swerveKinematics.toChassisSpeeds(getModuleStates());
         ChassisSpeeds robotRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, getGyroYaw());
         return robotRelativeSpeeds;
     }
 
+    /**
+     * Uses the previously-defined drive() method and a ChassisSpeeds object to perform ROBOT-RELATIVE driving
+     * @param speeds A ChassisSpeeds object that contains the desired ROBOT-RELATIVE (robot chassis) translational movement and angular 
+     * velocity of the robot chassis (radians per second)
+     */
     public void driveRobotRelative(ChassisSpeeds speeds) { // For PathPlanner
         this.drive(new Translation2d(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond), speeds.omegaRadiansPerSecond, false, false);
     }

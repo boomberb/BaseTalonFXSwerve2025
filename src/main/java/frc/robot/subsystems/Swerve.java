@@ -203,9 +203,11 @@ public class Swerve extends SubsystemBase {
 
     @Override
     public void periodic(){
-        swerveOdometry.update(getGyroYaw(), getModulePositions());
+        /* All swerve drive odometries or swerve pose estimators MUST be updated periodically */
+        swerveOdometry.update(getGyroYaw(), getModulePositions()); 
 
-        for(SwerveModule mod : mSwerveMods){
+        /* Send debugging information to SmartDashboard (or, in the future, perhaps AdvantageScope) */
+        for(SwerveModule mod : mSwerveMods){ // TODO: Change to use AdvantageScope's features for better visual feedback
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " CANcoder", mod.getCANcoder().getDegrees());
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " Angle", mod.getPosition().angle.getDegrees());
             SmartDashboard.putNumber("Mod " + mod.moduleNumber + " Velocity", mod.getState().speedMetersPerSecond);    

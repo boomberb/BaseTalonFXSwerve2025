@@ -1,8 +1,8 @@
-**<ins>Note #1:</ins> This code is intended to be an updated (2025) version of dirtbikerxz's BaseTalonFXSwerve project, which may be found on the following GitHub repository: https://github.com/dirtbikerxz/BaseTalonFXSwerve. The majority of the code and the README that follows are the same as those of the original repository.**
+**<ins>Editor's Note #1:</ins> This code is intended to be an updated (2025) version of dirtbikerxz's BaseTalonFXSwerve project, which may be found on the following GitHub repository: https://github.com/dirtbikerxz/BaseTalonFXSwerve. The majority of the code and the README that follows are the same as those or minimally modified of the original repository.**
 
-**<ins>Note #2:</ins> Due to the popularity and ease of use to PathPlanner, this project uses PathPlanner instead of the swerve autonomous code used in dirtbikerxz's repository.**
+**<ins>Editor's Note #2:</ins> Due to the popularity and ease of use to PathPlanner, this project uses PathPlanner instead of the swerve autonomous code used in dirtbikerxz's repository.**
 
-**<ins>Note #3:</ins> While this code intends to provide plug n play configs/tuning numbers for COTS Modules, there are several configs/tunes that are untested with the change to Phoenix 6. If this code is used for one of those untested modules, the module specific configs and tuning will most likely need to be edited.**
+**<ins>Note:</ins> While this code intends to provide plug n play configs/tuning numbers for COTS Modules, there are several configs/tunes that are untested with the change to Phoenix 6. If this code is used for one of those untested modules, the module specific configs and tuning will most likely need to be edited.**
 
 **Scroll down for a full list of tested/untested configs.**
 
@@ -40,25 +40,26 @@ These instructions are mostly followable from Step
 <br>This can always remain false, since you set your offsets in step 11 such that a positive input to the drive motor will cause the robot to drive forwards.
 <br>However this can be set to true if for some reason you prefer the bevel gears on the wheel to face one direction or another when setting offsets. See Step 11 for more information.
 
-10. ```Module Specific Constants```: set the Can Id's of the motors and CANCoders for the respective modules, see the next step for setting offsets.
-11. Setting Offsets
+10. ```usesCANivore```: Set to true if ALL DEVICES on the swerve drive use a CANivore and false otherwise. ```swerveCANivoreName```: Set to the name of the CANivore in use if ALL DEVICES on the swerve drive use that CANivore and ignore this variable otherwise
+11. ```Module Specific Constants```: Set the Can Id's of the motors and CANCoders for the respective modules, see the next step for setting offsets.
+12. Setting Offsets
     * For finding the offsets, use a piece of 1x1 metal that is straight against the forks of the front and back modules (on the left and right side) to ensure that the modules are straight. 
     * Point the bevel gears of all the wheels in the same direction (either facing left or right), where a postive input to the drive motor drives the robot forward (you can use phoenix tuner to test this). If for some reason you set the offsets with the wheels backwards, you can change the ```driveMotorInvert``` value to fix.
     * Open smartdashboard (or shuffleboard and go to the smartdashboard tab), you will see 4 printouts called "Mod 0 Cancoder", "Mod 1 Cancoder", etc. 
     <br>If you have already straightened the modules, copy those 4 numbers exactly (to 2 decimal places) to their respective ```angleOffset``` variable in constants.
     <br><b>Note:</b> The CANcoder values printed to smartdashboard are in degrees, when copying the values to ```angleOffset``` you must use ```Rotation2d.fromDegrees("copied value")```.
 
-12. Angle Motor PID Values: <br><b>If you are using a supported module, this value will be automatically set. If you are not, or prefer a more or less aggressive response, you can use the below instructions to tune.</b> 
+13. Angle Motor PID Values: <br><b>If you are using a supported module, this value will be automatically set. If you are not, or prefer a more or less aggressive response, you can use the below instructions to tune.</b> 
     * To tune start with a low P value (0.01).
     * Multiply by 10 until the module starts oscilating around the set point
     * Scale back by searching for the value (for example, if it starts oscillating at a P of 10, then try (10 -> 5 -> 7.5 -> etc)) until the module doesn't oscillate around the setpoint.
     * If there is any overshoot you can add in some D by repeating the same process, leave at 0 if not. Always leave I at 0.
 
-13. ```maxSpeed```: In Meters Per Second. ```maxAngularVelocity```: In Radians Per Second. For these you can use the theoretical values, but it is better to physically drive the robot and find the actual max values.
+14. ```maxSpeed```: In Meters Per Second. ```maxAngularVelocity```: In Radians Per Second. For these you can use the theoretical values, but it is better to physically drive the robot and find the actual max values.
 
 
-14. Get the drive characterization values (KS, KV, KA) by using the WPILib characterization tool, found [here](https://docs.wpilib.org/en/stable/docs/software/wpilib-tools/robot-characterization/introduction.html). You will need to lock your modules straight forward, and complete the characterization as if it was a standard tank drive.
-15. ```driveKP```: 
+15. Get the drive characterization values (KS, KV, KA) by using the WPILib characterization tool, found [here](https://docs.wpilib.org/en/stable/docs/software/wpilib-tools/robot-characterization/introduction.html). You will need to lock your modules straight forward, and complete the characterization as if it was a standard tank drive.
+16. ```driveKP```: 
 <br>After completeing characterization and inserting the KS, KV, and KA values into the code, tune the drive motor kP until it doesn't overshoot and doesnt oscilate around a target velocity.
 <br>Leave ```driveKI```, and ```driveKD``` at 0.0.
 

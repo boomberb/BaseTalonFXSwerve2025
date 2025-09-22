@@ -32,7 +32,7 @@ public class Swerve extends SubsystemBase {
      * @return A new Swerve subsystem object
      */
     public Swerve() {
-        gyro = new Pigeon2(Constants.Swerve.pigeonID);
+        gyro = new Pigeon2(Constants.Swerve.pigeonID, "CANivor<3");
         gyro.getConfigurator().apply(new Pigeon2Configuration());
         gyro.setYaw(0); // The robot should move in the direction the front wheels face when the robot is first booted up
 

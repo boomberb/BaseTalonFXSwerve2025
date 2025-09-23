@@ -31,7 +31,8 @@ public class SwerveModule {
     private final PositionVoltage anglePosition = new PositionVoltage(0);
 
     /**
-     * Creates a SwerveModule object that represents a physical swerve module
+     * Creates a SwerveModule object that represents a physical swerve module; this method is used if the swerve drive's devices are NOT
+     * linked to a CANivore
      * @param moduleNumber The ID number of the swerve module (FL = 0, FR = 1, BL = 2, BR = 3)
      * @param moduleConstants A SwerveModuleConstants object that contains the swerve module motor IDs, absolute encoder ID, and 
      * absolute encoder angle offset
@@ -52,6 +53,34 @@ public class SwerveModule {
 
         /* Drive Motor Config */
         mDriveMotor = new TalonFX(moduleConstants.driveMotorID, "CANivor<3");
+        mDriveMotor.getConfigurator().apply(Robot.ctreConfigs.swerveDriveFXConfig);
+        mDriveMotor.getConfigurator().setPosition(0.0);
+    }
+
+    /**
+     * Creates a SwerveModule object that represents a physical swerve module linked to a CANivore. Do NOT use this method if any device 
+     * on the swerve drive are not linked to the CANivore
+     * @param moduleNumber The ID number of the swerve module (FL = 0, FR = 1, BL = 2, BR = 3)
+     * @param moduleConstants A SwerveModuleConstants object that contains the swerve module motor IDs, absolute encoder ID, and 
+     * absolute encoder angle offset
+     * @param canbusName The name of the CANivore used for the swerve drive
+     * @return A new SwerveModule object
+     */
+    public SwerveModule(int moduleNumber, SwerveModuleConstants moduleConstants, String canbusName){
+        this.moduleNumber = moduleNumber;
+        this.angleOffset = moduleConstants.angleOffset;
+        
+        /* Angle Encoder Config */
+        angleEncoder = new CANcoder(moduleConstants.cancoderID, canbusName);
+        angleEncoder.getConfigurator().apply(Robot.ctreConfigs.swerveCANcoderConfig);
+
+        /* Angle Motor Config */
+        mAngleMotor = new TalonFX(moduleConstants.angleMotorID, canbusName);
+        mAngleMotor.getConfigurator().apply(Robot.ctreConfigs.swerveAngleFXConfig);
+        resetToAbsolute();
+
+        /* Drive Motor Config */
+        mDriveMotor = new TalonFX(moduleConstants.driveMotorID, canbusName);
         mDriveMotor.getConfigurator().apply(Robot.ctreConfigs.swerveDriveFXConfig);
         mDriveMotor.getConfigurator().setPosition(0.0);
     }

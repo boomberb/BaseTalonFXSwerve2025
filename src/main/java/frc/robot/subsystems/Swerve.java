@@ -32,17 +32,31 @@ public class Swerve extends SubsystemBase {
      * @return A new Swerve subsystem object
      */
     public Swerve() {
-        gyro = new Pigeon2(Constants.Swerve.pigeonID, "CANivor<3");
-        gyro.getConfigurator().apply(new Pigeon2Configuration());
-        gyro.setYaw(0); // The robot should move in the direction the front wheels face when the robot is first booted up
+        if (Constants.Swerve.usesCANivore) {
+            gyro = new Pigeon2(Constants.Swerve.pigeonID, Constants.Swerve.swerveCANivoreName);
+            gyro.getConfigurator().apply(new Pigeon2Configuration());
+            gyro.setYaw(0); // The robot should move in the direction the front wheels face when the robot is first booted up
 
-        /* SwerveModule Objects */
-        mSwerveMods = new SwerveModule[] { 
-            new SwerveModule(0, Constants.Swerve.Mod0.constants),
-            new SwerveModule(1, Constants.Swerve.Mod1.constants),
-            new SwerveModule(2, Constants.Swerve.Mod2.constants),
-            new SwerveModule(3, Constants.Swerve.Mod3.constants)
-        };
+            /* SwerveModule Objects */
+            mSwerveMods = new SwerveModule[] { 
+                new SwerveModule(0, Constants.Swerve.Mod0.constants, Constants.Swerve.swerveCANivoreName),
+                new SwerveModule(1, Constants.Swerve.Mod1.constants, Constants.Swerve.swerveCANivoreName),
+                new SwerveModule(2, Constants.Swerve.Mod2.constants, Constants.Swerve.swerveCANivoreName),
+                new SwerveModule(3, Constants.Swerve.Mod3.constants, Constants.Swerve.swerveCANivoreName)
+            };
+        } else {
+            gyro = new Pigeon2(Constants.Swerve.pigeonID);
+            gyro.getConfigurator().apply(new Pigeon2Configuration());
+            gyro.setYaw(0); // The robot should move in the direction the front wheels face when the robot is first booted up
+
+            /* SwerveModule Objects */
+            mSwerveMods = new SwerveModule[] { 
+                new SwerveModule(0, Constants.Swerve.Mod0.constants),
+                new SwerveModule(1, Constants.Swerve.Mod1.constants),
+                new SwerveModule(2, Constants.Swerve.Mod2.constants),
+                new SwerveModule(3, Constants.Swerve.Mod3.constants)
+            };
+        }
 
         /* Swerve Drive Odometry (or, in the future, perhaps a Swerve Pose Estimator)
          * A SwerveDriveOdometry object works by constantly tracking the angle of rotation (yaw) of the robot chassis, the current angle 
